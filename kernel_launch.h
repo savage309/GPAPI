@@ -84,8 +84,8 @@ namespace GPAPI {
 #ifdef TARGET_CUDA
             pushContext(context);
             err = cuLaunchKernel(kernel.get(),
-                               (unsigned long)globalSize, 1UL, 1UL, // grid size
-                               (unsigned long)localSize, 1UL, 1UL, // block size
+                               (unsigned int)globalSize, 1UL, 1UL, // grid size
+                               (unsigned int)localSize, 1UL, 1UL, // block size
                                0, // shared size
                                NULL, // stream
                                &paramsPtrs[0],

@@ -30,7 +30,7 @@ struct DeviceVecAdd : Device {
         
         kernel.init("vecAdd", program);
         
-        int NUM_ELEMENTS = 32*1024;
+        int NUM_ELEMENTS = 1024;
         
         std::unique_ptr<int[]> h_a (new int[NUM_ELEMENTS]);
         std::unique_ptr<int[]> h_b (new int[NUM_ELEMENTS]);
@@ -94,32 +94,26 @@ struct DeviceVecAdd : Device {
 int main(int argc, const char * argv[]) {
     using namespace std;
     
-    std::vector<Platform> platformIds;
-    std::vector<DeviceID> deviceIds;
-    std::vector<Context> contextIds;
-    std::vector<Program> programIds;
-    std::vector<std::string> deviceNames;
+    
 
     std::string source = getProgramSource("/Developer/git/opencl/opencl/kernel.cl");
+    std::vector<DeviceVecAdd*> vec;
+    initGPAPI<DeviceVecAdd>(vec, source);
     
-    initGPAPI(platformIds, deviceIds, deviceNames, contextIds, programIds, source);
-    
-    std::unique_ptr<DeviceVecAdd[]> devices(new DeviceVecAdd[deviceIds.size()]);
     
     std::vector<std::thread> threads;
-    for (int i = 0; i < deviceIds.size(); ++i) {
-        devices[i].init(platformIds[0], deviceIds[i], deviceNames[i], contextIds[i], programIds[i]);
-        threads.push_back(std::thread(&DeviceVecAdd::launchKernel, &devices[i]));
+    for (int i = 0; i < vec.size(); ++i) {
+        threads.push_back(std::thread(&DeviceVecAdd::launchKernel, vec[i]));
     }
     
     for (auto& t: threads)
         t.join();
     
-    for (int i = 0; i < deviceIds.size(); ++i) {
-        devices[i].freeMem();
+    for (int i = 0; i < vec.size(); ++i) {
+        vec[i]->freeMem();
     }
     
-    freeGPAPI(platformIds, deviceIds, deviceNames, contextIds, programIds);
+    freeGPAPI(vec);
     
     return 0;
 }

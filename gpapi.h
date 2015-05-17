@@ -16,8 +16,14 @@
 
 namespace GPAPI {
     
-    template <typename PLATFORMS, typename DEVICES, typename NAMES, typename CONTEXTS, typename PROGRAMS>
-    inline void initGPAPI(PLATFORMS& platformIds, DEVICES& deviceIds, NAMES& deviceNames, CONTEXTS& contextIds, PROGRAMS& programIds, const::std::string& source) {
+    template <typename DEVICE>
+    inline void initGPAPI(std::vector<DEVICE*>& devices, const::std::string& source) {
+        std::vector<Platform> platformIds;
+        std::vector<DeviceID> deviceIds;
+        std::vector<Context> contextIds;
+        std::vector<Program> programIds;
+        std::vector<std::string> deviceNames;
+        
 #ifdef TARGET_OPENCL
         initOpenCL(platformIds, deviceIds, deviceNames, contextIds, programIds, source);
 #endif //TARGET_OPENCL
@@ -32,36 +38,40 @@ namespace GPAPI {
         contextIds.push_back(0);
         programIds.push_back(0);
 #endif
+        for (int i = 0; i < deviceIds.size(); ++i) {
+            DEVICE* d = new DEVICE;
+            d->init(platformIds[0], deviceIds[i], deviceNames[i], contextIds[i], programIds[i]);
+            devices.push_back(d);
+        }
+
     }
     
     
-    template <typename PLATFORMS, typename DEVICES, typename NAMES, typename CONTEXTS, typename PROGRAMS>
-    inline void freeGPAPI(PLATFORMS& platformIds, DEVICES& deviceIds, NAMES& deviceNames, CONTEXTS& contextIds, PROGRAMS& programIds) {
+    template <typename DEVICE>
+    inline void freeGPAPI(std::vector<DEVICE*> devices) {
         GPU_RESULT err = GPU_SUCCESS;
 #ifdef TARGET_OPENCL
-        for (int i = 0; i < deviceIds.size(); ++i) {
-            err = clReleaseDevice(deviceIds[i]);
+        for (int i = 0; i < devices.size(); ++i) {
+            err = clReleaseDevice(devices[i]->device);
+            CHECK_ERROR(err);
+            err = clReleaseContext(devices[i]->context);
+            CHECK_ERROR(err);
+            err = clReleaseProgram(devices[i]->program);
             CHECK_ERROR(err);
         }
-        for (int i = 0; i < contextIds.size(); ++i) {
-            err = clReleaseContext(contextIds[i]);
-            CHECK_ERROR(err);
-        }
-        for (int i = 0; i < programIds.size(); ++i) {
-            err = clReleaseProgram(programIds[i]);
-            CHECK_ERROR(err);
-        }
+        
 #endif
 #ifdef TARGET_CUDA
-        for (int i = 0; i < programIds.size(); ++i) {
-            err = cuModuleUnload(programIds[i]);
+        for (int i = 0; i < devices.size(); ++i) {
+            err = cuModuleUnload(devices[i]->program);
             CHECK_ERROR(err);
-        }
-        for (int i = 0; i < contextIds.size(); ++i) {
-            err = cuCtxDestroy(contextIds[i]);
+            err = cuCtxDestroy(devices[i]->context);
             CHECK_ERROR(err);
         }
 #endif
+        for (int i = 0; i < devices.size(); ++i) {
+            delete devices[i];
+        }
         CHECK_ERROR(err);
     }
 }

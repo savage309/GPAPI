@@ -8,8 +8,9 @@
 
 #ifndef opencl_configure_h
 #define opencl_configure_h
+
 //#define TARGET_CUDA
 //#define TARGET_OPENCL
-#define TARGET_NATIVE
+//#define TARGET_NATIVE
 
 #endif
