@@ -8,8 +8,8 @@
 #include <future>
 #include <ctime>
 
-//#define TARGET_CUDA
-#define TARGET_OPENCL
+#define TARGET_CUDA
+//#define TARGET_OPENCL
 
 #include "buffer.h"
 #include "opencl_misc.h"
@@ -77,18 +77,18 @@ struct DeviceVecAdd : Device {
         kernelLaunch.addArg(NUM_ELEMENTS);
         
         // Execute the kernel over the entire range of the data set
-        kernelLaunch.run(queue, globalSize, localSize);
+        kernelLaunch.run(queue, context, globalSize, localSize);
         printLog(LogType::Info, "enqueue from device %s\n", name.c_str());
         // Wait for the command queue to get serviced before reading back results
-        kernelLaunch.wait();
+        kernelLaunch.wait(queue, context);
         printLog(LogType::Info, "finish from device %s\n", name.c_str());
         // Read the results from the device
         
-        d_c.download(queue.get(), h_c.get(), bytes);
+        d_c.download(queue.get(), context, h_c.get(), bytes);
         
         printLog(LogType::Info, "results from device %s\n", name.c_str());
         for (int i = 0; i < NUM_ELEMENTS; ++i) {
-           //printf ("%i ", h_c[i]);
+           printf ("%i ", h_c[i]);
         }
     }
 

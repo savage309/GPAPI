@@ -29,8 +29,9 @@ namespace GPAPI {
             queueFlags &= CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE;
             
             queue = clCreateCommandQueue(context, device, 0, &err);
-            CHECK_ERROR(err);
 #endif
+            CHECK_ERROR(err);
+
         }
         void freeMem() {
 #ifdef TARGET_OPENCL

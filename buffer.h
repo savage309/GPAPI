@@ -101,11 +101,21 @@ struct Buffer {
 #endif //TARGET_NATIVE
         CHECK_ERROR(err);
     }
-    void download(GPU_QUEUE queue, void* hostPtr, size_t bytes) {
+    void download(GPU_QUEUE queue, Context context, void* hostPtr, size_t bytes) {
+        GPU_RESULT err = GPU_SUCCESS;
 #ifdef TARGET_OPENCL
-        GPU_RESULT err = clEnqueueReadBuffer(queue, *(cl_mem*)get(), GPU_TRUE, 0, bytes, hostPtr, 0, NULL, NULL );
-        CHECK_ERROR(err);
+        err = clEnqueueReadBuffer(queue, *(cl_mem*)get(), GPU_TRUE, 0, bytes, hostPtr, 0, NULL, NULL );
 #endif
+#ifdef TARGET_CUDA
+        pushContext(context);
+        err = cuMemcpyDtoH(hostPtr, cudaMem, bytes);
+        popContext(context);
+#endif //TARGET_CUDA
+#ifdef TARGET_NATIVE
+        memcpy(hostPtr, nativeMem, bytes);
+#endif //TARGET_NATIVE
+        CHECK_ERROR(err);
+
     }
     ~Buffer() {
         freeMem();
