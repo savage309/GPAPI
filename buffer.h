@@ -101,6 +101,12 @@ struct Buffer {
 #endif //TARGET_NATIVE
         CHECK_ERROR(err);
     }
+    void download(GPU_QUEUE queue, void* hostPtr, size_t bytes) {
+#ifdef TARGET_OPENCL
+        GPU_RESULT err = clEnqueueReadBuffer(queue, *(cl_mem*)get(), GPU_TRUE, 0, bytes, hostPtr, 0, NULL, NULL );
+        CHECK_ERROR(err);
+#endif
+    }
     ~Buffer() {
         freeMem();
     }

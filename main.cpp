@@ -40,8 +40,6 @@ struct DeviceVecAdd : Device {
     Buffer d_c;
     
     void launchKernel() {
-        GPU_RESULT err = GPU_SUCCESS;
-        
         printLog(LogType::Info, "kernel %s for device %s launched\n", "vecAdd", name.c_str());
         
         kernel.init("vecAdd", program);
@@ -86,17 +84,12 @@ struct DeviceVecAdd : Device {
         printLog(LogType::Info, "finish from device %s\n", name.c_str());
         // Read the results from the device
         
-#ifdef TARGET_OPENCL
-        err = clEnqueueReadBuffer(queue.get(), *(cl_mem*)d_c.get(), GPU_TRUE, 0,
-                            bytes, h_c.get(), 0, NULL, NULL );
-        CHECK_ERROR(err);
-#endif
+        d_c.download(queue.get(), h_c.get(), bytes);
         
         printLog(LogType::Info, "results from device %s\n", name.c_str());
         for (int i = 0; i < NUM_ELEMENTS; ++i) {
            //printf ("%i ", h_c[i]);
         }
-        fflush(stdout);
     }
 
 };
@@ -117,12 +110,10 @@ inline void initGPU(PLATFORMS& platformIds, DEVICES& deviceIds, NAMES& deviceNam
 int main(int argc, const char * argv[]) {
     using namespace std;
     
-    GPU_RESULT err = GPU_SUCCESS;
-    
-    std::vector<GPU_PLATFORM> platformIds;
-    std::vector<GPU_DEVICE> deviceIds;
-    std::vector<GPU_CONTEXT> contextIds;
-    std::vector<GPU_PROGRAM> programIds;
+    std::vector<Platform> platformIds;
+    std::vector<DeviceID> deviceIds;
+    std::vector<Context> contextIds;
+    std::vector<Program> programIds;
     std::vector<std::string> deviceNames;
 
     std::string source = getProgramSource("/Developer/git/opencl/opencl/kernel.cl");
@@ -139,8 +130,6 @@ int main(int argc, const char * argv[]) {
     
     for (auto& t: threads)
         t.join();
-    
-    CHECK_ERROR(err);
     
     return 0;
 }
