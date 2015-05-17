@@ -29,10 +29,13 @@ enum KernelParams {
 void GPAPI::NativeDevice::launchKernel(KernelLaunch& kernelLaunch, size_t numTasks){
     for (int i = 0; i < numTasks; ++i) {
         threadIdx = i;
-        vecAdd((int*)kernelLaunch.paramsPtrs[KernelParams::D_A],
-               (int*)kernelLaunch.paramsPtrs[KernelParams::D_B],
-               (int*)kernelLaunch.paramsPtrs[KernelParams::D_RES],
-               *(int*)kernelLaunch.paramsPtrs[KernelParams::COUNT]);
+        
+        int** paramsPtrs = (int**)kernelLaunch.ptrs;
+        
+        vecAdd(paramsPtrs[KernelParams::D_A],
+               paramsPtrs[KernelParams::D_B],
+               paramsPtrs[KernelParams::D_RES],
+               *(int*)paramsPtrs[KernelParams::COUNT]);
     }
 }
 

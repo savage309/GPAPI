@@ -61,6 +61,7 @@ struct Buffer {
             memcpy(nativeMem, hostSrc, numBytes);
         }
 #endif //TARGET_NATIVE
+        CHECK_ERROR(err);
     }
     
     void* get() {
@@ -89,7 +90,7 @@ struct Buffer {
         cudaMem = NULL;
 #endif //TARGET_CUDA
 #ifdef TARGET_NATIVE
-        delete[] nativeMem;
+        delete[] (char*)nativeMem;
         nativeMem = NULL;
 #endif //TARGET_NATIVE
         CHECK_ERROR(err);

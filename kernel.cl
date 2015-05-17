@@ -40,8 +40,11 @@ void vecAdd(GLOBAL int *a, GLOBAL int *b, GLOBAL int *c, const unsigned int n) {
 
     //Make sure we do not go out of bounds
     for (int i = 0; i < n; ++i) {
-        if (id < n)
-            c[id] = a[id] + b[id];
+        if (id < n) {
+            int ai = a[id] + 1;
+            int bi = b[id];
+            c[id] = ai + bi;
+        }
     }
     
 }

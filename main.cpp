@@ -41,7 +41,7 @@ struct DeviceVecAdd : Device {
         }
         
         const size_t bytes = NUM_ELEMENTS * sizeof(int);
-        
+                
         d_a.init(queue.get(), context, h_a.get(), bytes);
         d_b.init(queue.get(), context, h_b.get(), bytes);
         d_c.init(queue.get(), context, NULL, bytes);
@@ -77,6 +77,16 @@ struct DeviceVecAdd : Device {
            printf ("%i ", h_c[i]);
         }
     }
+    
+    void freeMem() {
+        d_a.freeMem();
+        d_b.freeMem();
+        d_c.freeMem();
+    }
+    
+    ~DeviceVecAdd() {
+        freeMem();
+    }
 
 };
 
@@ -104,6 +114,10 @@ int main(int argc, const char * argv[]) {
     
     for (auto& t: threads)
         t.join();
+    
+    for (int i = 0; i < deviceIds.size(); ++i) {
+        devices[i].freeMem();
+    }
     
     freeGPAPI(platformIds, deviceIds, deviceNames, contextIds, programIds);
     

@@ -10,17 +10,26 @@
 
 namespace GPAPI {
     struct KernelLaunch {
-#if (defined TARGET_CUDA) || (defined TARGET_NATIVE)
+#if (defined TARGET_CUDA)
         char paramsBuffer[4096]; // A buffer to hold parameter values
         void *paramsPtrs[1024]; // A buffer to hold pointers to each parameter
         int numParams;
         int paramOffset;
 #endif
+#ifdef TARGET_NATIVE
+        int numParams;
+        std::vector<void*> ptrsToDelete;
+        void* ptrs[1024];
+#endif
+        
         Kernel& kernel;
         int index;
         KernelLaunch(Kernel& kernel):kernel(kernel), index(0) {
-#if  (defined TARGET_CUDA) || (defined TARGET_NATIVE)
+#if  (defined TARGET_CUDA)
             numParams = paramOffset = 0;
+#endif
+#if (defined TARGET_NATIVE)
+            numParams = 0;
 #endif
         
         }
@@ -29,11 +38,18 @@ namespace GPAPI {
 #ifdef TARGET_OPENCL
             err = clSetKernelArg(kernel.get(), index++, sizeof(cl_mem), buffer.get());
 #endif
-#if  (defined TARGET_CUDA) || (defined TARGET_NATIVE)
+#if  (defined TARGET_CUDA)
             size_t argSize = sizeof(buffer.get());
+            
+            printf("%p\n", buffer.get());
+            
             paramsPtrs[numParams++]=(paramsBuffer+paramOffset);
             memcpy(paramsBuffer+paramOffset, buffer.get(), argSize);
             paramOffset+=argSize;
+#endif
+#ifdef TARGET_NATIVE
+            ptrs[numParams] = buffer.get();
+            numParams++;
 #endif
             CHECK_ERROR(err);
         }
@@ -42,11 +58,18 @@ namespace GPAPI {
 #ifdef TARGET_OPENCL
             err = clSetKernelArg(kernel.get(), index++, sizeof(unsigned int), &arg);
 #endif
-#if  (defined TARGET_CUDA) || (defined TARGET_NATIVE)
+#if  (defined TARGET_CUDA)
             size_t argSize = sizeof(arg);
             paramsPtrs[numParams++]=(paramsBuffer+paramOffset);
             memcpy(paramsBuffer+paramOffset, &arg, argSize);
             paramOffset+=argSize;
+#endif
+#ifdef TARGET_NATIVE
+            int* newInt = new int;
+            *newInt = arg;
+            ptrs[numParams] = newInt;
+            numParams++;
+            ptrsToDelete.push_back(newInt);
 #endif
             CHECK_ERROR(err);
 
@@ -88,6 +111,15 @@ namespace GPAPI {
             popContext(context);
 #endif
             CHECK_ERROR(err);
+        }
+        void freeMem() {
+#ifdef TARGET_NATIVE
+            for (int i = 0; i < ptrsToDelete.size(); ++i)
+                delete (char*)ptrsToDelete[i];
+#endif
+        }
+        ~KernelLaunch() {
+            freeMem();
         }
     };
 

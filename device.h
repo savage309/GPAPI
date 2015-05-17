@@ -29,6 +29,7 @@ namespace GPAPI {
             queue.init(device, context);
         }
         virtual void launchKernel() = 0;
+        virtual void freeMem() = 0;
         virtual ~Device(){}
     };
 }

@@ -31,6 +31,7 @@ namespace GPAPI {
             err = cuModuleGetFunction(&kernel, program, name);
             CHECK_ERROR(err);
 #endif
+            CHECK_ERROR(err);
         }
     };
 
