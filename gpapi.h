@@ -1,9 +1,12 @@
 #ifndef __GPAPI_H__
 #define __GPAPI_H__
 
+#include "configure.h"
+
 #if !(defined TARGET_OPENCL) && !(defined TARGET_CUDA) && !(defined TARGET_NATIVE)
 #   error GPAPI::opencl_misc needs one of CUDA, OpenCL or NATIVE targets to be defined
 #endif
+
 
 #include "buffer.h"
 #include "opencl_misc.h"

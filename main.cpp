@@ -1,12 +1,9 @@
 
-
 #include <thread>
 
-#include "configure.h"
 #include "gpapi.h"
 
 using namespace GPAPI;
-
 
 std::string getProgramSource(const std::string& path) {
     std::ifstream programSource(path);
@@ -17,7 +14,6 @@ std::string getProgramSource(const std::string& path) {
     std::string source((std::istreambuf_iterator<char>(programSource)),std::istreambuf_iterator<char>());
     return std::move(source);
 }
-
 
 struct DeviceVecAdd : Device {
     //
@@ -93,13 +89,10 @@ struct DeviceVecAdd : Device {
 
 int main(int argc, const char * argv[]) {
     using namespace std;
-    
-    
 
     std::string source = getProgramSource("/Developer/git/opencl/opencl/kernel.cl");
     std::vector<DeviceVecAdd*> vec;
     initGPAPI<DeviceVecAdd>(vec, source);
-    
     
     std::vector<std::thread> threads;
     for (int i = 0; i < vec.size(); ++i) {
@@ -108,10 +101,6 @@ int main(int argc, const char * argv[]) {
     
     for (auto& t: threads)
         t.join();
-    
-    for (int i = 0; i < vec.size(); ++i) {
-        vec[i]->freeMem();
-    }
     
     freeGPAPI(vec);
     
