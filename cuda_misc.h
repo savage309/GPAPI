@@ -29,6 +29,8 @@ namespace GPAPI {
         err = cuDeviceGetCount(&count);
         CHECK_ERROR(err);
         
+        platformIds.push_back(0);
+        
         for (int i = 0; i < count; ++i) {
             GPU_DEVICE device;
             err = cuDeviceGet(&device, i);

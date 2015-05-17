@@ -21,7 +21,7 @@ struct Buffer {
     cl_mem clMem;
 #endif //TARGET_OPENCL
 #ifdef TARGET_CUDA
-    CUdeviceptr* cudaMem;
+    CUdeviceptr cudaMem;
 #endif //TARGET_CUDA
 #ifdef TARGET_NATIVE
     void* nativeMem;
@@ -42,19 +42,25 @@ struct Buffer {
     
     void init(GPU_QUEUE queue, GPU_CONTEXT context, const void* hostSrc, size_t numBytes) {
         freeMem();
-        
-#ifdef TARGET_OPENCL
         GPU_RESULT err = GPU_SUCCESS;
+
+#ifdef TARGET_OPENCL
         clMem = clCreateBuffer(context, CL_MEM_READ_WRITE, numBytes, NULL, &err);
         CHECK_ERROR(err);
         if (hostSrc) {
-            err = clEnqueueWriteBuffer(queue, clMem, GPU_TRUE, 0,
-                                       numBytes, hostSrc, 0, NULL, NULL);
+            err = clEnqueueWriteBuffer(queue, clMem, GPU_TRUE, 0, numBytes, hostSrc, 0, NULL, NULL);
             CHECK_ERROR(err);
         }
 #endif //TARGET_OPENCL
 #ifdef TARGET_CUDA
-        
+        pushContext(context);
+        err = cuMemAlloc(&cudaMem, numBytes);
+        CHECK_ERROR(err);
+        if (hostSrc) {
+            err = cuMemcpyHtoD(cudaMem, hostSrc, numBytes);
+            CHECK_ERROR(err);
+        }
+        popContext(context);
 #endif //TARGET_CUDA
 #ifdef TARGET_NATIVE
         nativeMem = new char[numBytes];
@@ -69,7 +75,7 @@ struct Buffer {
         return &clMem;
 #endif //TARGET_OPENCL
 #ifdef TARGET_CUDA
-        return cudaMem;
+        return &cudaMem;
 #endif //TARGET_CUDA
 #ifdef TARGET_NATIVE
         return nativeMem;
@@ -84,7 +90,10 @@ struct Buffer {
         clMem = NULL;
 #endif //TARGET_OPENCL
 #ifdef TARGET_CUDA
-        
+        if (cudaMem)
+            err = cuMemFree(cudaMem);
+        CHECK_ERROR(err);
+        cudaMem = NULL;
 #endif //TARGET_CUDA
 #ifdef TARGET_NATIVE
         delete[] nativeMem;

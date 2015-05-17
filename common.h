@@ -67,6 +67,10 @@
 #endif
 #endif
 
+#define Platform GPU_PLATFORM
+#define DeviceID GPU_DEVICE
+#define Context GPU_CONTEXT
+#define Program GPU_PROGRAM
 
 enum class LogType { Info = 0, Warning, Error };
 
@@ -113,6 +117,19 @@ void __checkError(T error, const char* file, int line) {
 
 #define CHECK_ERROR(X) __checkError(X, __FILE__, __LINE__)
 
+void pushContext(GPU_CONTEXT context) {
+#ifdef TARGET_CUDA
+    GPU_RESULT err = cuCtxPushCurrent(context);
+    CHECK_ERROR(err);
+#endif
+}
+
+void popContext(GPU_CONTEXT context) {
+#ifdef TARGET_CUDA
+    GPU_RESULT err = cuCtxPopCurrent(&context);
+    CHECK_ERROR(err);
+#endif
+}
 
 
 #endif
