@@ -1,18 +1,11 @@
-//
-//  buffer.h
-//  opencl
-//
-//  Created by savage309 on 17.05.15.
-//  Copyright (c) 2015 г. savage309. All rights reserved.
-//
 
 #ifndef opencl_buffer_h
 #define opencl_buffer_h
 
 #include "common.h"
 
-#if !(defined TARGET_OPENCL) && !(defined TARGET_CUDA) && !(defined TARGET_NATIVE)
-#error GPAPI::Buffer needs one of CUDA, OpenCL or NATIVE targets to be defined
+#if !(defined __GPAPI_H__) && !(defined __GPAPI_NATIVE_MISC_H__)
+#   error For GPAPI you need only to include gpapi.h
 #endif
 
 namespace GPAPI {

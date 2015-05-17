@@ -1,16 +1,9 @@
-//
-//  cuda_misc.h
-//  opencl
-//
-//  Created by savage309 on 17.05.15.
-//  Copyright (c) 2015 г. savage309. All rights reserved.
-//
 
 #ifndef opencl_cuda_misc_h
 #define opencl_cuda_misc_h
 
-#if !(defined TARGET_OPENCL) && !(defined TARGET_CUDA) && !(defined TARGET_NATIVE)
-#error GPAPI::opencl_misc needs one of CUDA, OpenCL or NATIVE targets to be defined
+#ifndef __GPAPI_H__
+#   error For GPAPI you need only to include gpapi.h
 #endif
 
 #ifdef TARGET_CUDA
@@ -110,7 +103,6 @@ namespace GPAPI {
         jitValues[valuesCounter++] = (void*)errorBuffer;
         const int errorBufferSize = JIT_BUFFER_SIZE_IN_BYTES;
         jitValues[valuesCounter++] = (void*)errorBufferSize;
-       
         for (int i = 0; i < deviceIds.size(); ++i) {
             GPU_PROGRAM program;
             err = cuModuleLoadDataEx(&program, ptx.get(), JIT_NUM_OPTIONS, jitOptions, jitValues);
@@ -118,6 +110,8 @@ namespace GPAPI {
             programIds.push_back(program);
             printLog(LogType::Info, "program for device %i compiled\n", i);
         }
+        nvRes = nvrtcDestroyProgram(&program);
+        CHECK_ERROR(nvRes);
     }
 }
 

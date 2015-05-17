@@ -13,9 +13,9 @@
 #endif
 
 #if (!defined __OPENCL_VERSION__) && (!defined __CUDACC__)
-    #define KERNEL
+    #define KERNEL inline
     #define GLOBAL
-    #define DEVICE
+    #define DEVICE inline
     #define SHARED
 #endif
 
@@ -27,6 +27,10 @@ int getGlobalId() {
 #ifdef __CUDACC__
     return blockIdx.x*blockDim.x + threadIdx.x;
 #endif //__CUDACC__
+#ifdef __NATIVE__
+    extern int threadIdx;
+    return threadIdx;
+#endif
 }
 
 KERNEL
@@ -37,7 +41,7 @@ void vecAdd(GLOBAL int *a, GLOBAL int *b, GLOBAL int *c, const unsigned int n) {
     //Make sure we do not go out of bounds
     for (int i = 0; i < n; ++i) {
         if (id < n)
-            c[id] = a[id] + b[id] + i / (a[id] + b[id]);
+            c[id] = a[id] + b[id];
     }
     
 }

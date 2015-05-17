@@ -1,24 +1,21 @@
-//
-//  common.h
-//  opencl
-//
-//  Created by savage309 on 17.05.15.
-//  Copyright (c) 2015 г. savage309. All rights reserved.
-//
+
 
 #ifndef opencl_common_h
 #define opencl_common_h
 
-
-#ifdef TARGET_OPENCL
-#if (defined TRAGET_CUDA) || (defined TARGET_NATIVE)
-#error Only one of OpenCL, CUDA, Native targets can be defined at a time
+#if !(defined __GPAPI_H__) && !(defined __GPAPI_NATIVE_MISC_H__)
+#   error For GPAPI you need only to include gpapi.h
 #endif
 
+#ifdef TARGET_OPENCL
+#   if (defined TRAGET_CUDA) || (defined TARGET_NATIVE)
+#       error Only one of OpenCL, CUDA, Native targets can be defined at a time
+#   endif
+
 #ifdef __APPLE__
-#include "OpenCL/cl.h"
+#   include "OpenCL/cl.h"
 #else
-#include "cl.h"
+#   include "cl.h"
 #endif
 #define GPU_PLATFORM cl_platform_id
 #define GPU_SUCCESS CL_SUCCESS
@@ -37,9 +34,9 @@
 #endif
 
 #ifdef TARGET_CUDA
-#if (defined TARGET_OPENCL) || (defined TARGET_NATIVE)
-#error Only one of OpenCL, CUDA, Native targets can be defined at a time
-#endif
+#   if (defined TARGET_OPENCL) || (defined TARGET_NATIVE)
+#       error Only one of OpenCL, CUDA, Native targets can be defined at a time
+#   endif
 
 #include "cuda.h"
 #include "../nvrtc/include/nvrtc.h"
@@ -61,16 +58,31 @@
 #define GPU_QUEUE void*
 #endif
 
-#ifdef TRAGET_NATIVE
-#if (defined TARGET_OPENCL) || (defined TARGET_CUDA)
-#error Only one of OpenCL, CUDA, Native targets can be defined at a time
-#endif
+#ifdef TARGET_NATIVE
+#   if (defined TARGET_OPENCL) || (defined TARGET_CUDA)
+#       error Only one of OpenCL, CUDA, Native targets can be defined at a time
+#   endif
+#
+#define GPU_CONTEXT int
+#define GPU_QUEUE int
+#define GPU_RESULT int
+#define GPU_SUCCESS 0
+#define GPU_DEVICE int
+#define GPU_KERNEL int
+#define GPU_PROGRAM int
+#define GPU_PLATFORM int
 #endif
 
 #define Platform GPU_PLATFORM
 #define DeviceID GPU_DEVICE
 #define Context GPU_CONTEXT
 #define Program GPU_PROGRAM
+
+#include <memory>
+#include <fstream>
+#include <vector>
+#include <cmath>
+#include <ctime>
 
 enum class LogType { Info = 0, Warning, Error };
 
@@ -108,8 +120,9 @@ void printLog(LogType priority, const char *format, ...) {
 }
 
 template<typename T>
+inline
 void __checkError(T error, const char* file, int line) {
-    if (error != T(0)) {
+    if (error != 0) {
         printLog(LogType::Error, "error %i in file %s, line %i", error, file, line);
         exit(error);
     }
@@ -117,6 +130,7 @@ void __checkError(T error, const char* file, int line) {
 
 #define CHECK_ERROR(X) __checkError(X, __FILE__, __LINE__)
 
+inline
 void pushContext(GPU_CONTEXT context) {
 #ifdef TARGET_CUDA
     GPU_RESULT err = cuCtxPushCurrent(context);
@@ -124,6 +138,7 @@ void pushContext(GPU_CONTEXT context) {
 #endif
 }
 
+inline
 void popContext(GPU_CONTEXT context) {
 #ifdef TARGET_CUDA
     GPU_RESULT err = cuCtxPopCurrent(&context);

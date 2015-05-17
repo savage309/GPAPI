@@ -1,33 +1,16 @@
-//
-//  kernel_launch.h
-//  opencl
-//
-//  Created by savage309 on 17.05.15.
-//  Copyright (c) 2015 г. savage309. All rights reserved.
-//
-
 #ifndef opencl_kernel_launch_h
 #define opencl_kernel_launch_h
 
+#if !(defined __GPAPI_H__) && !(defined __GPAPI_NATIVE_MISC_H__)
+#   error For GPAPI you need only to include gpapi.h
+#endif
+
 #include "common.h"
-/*
- void addArg(void *arg, int argSize) { paramsPtrs[numParams++]=(paramsBuffer+paramOffset); memcpy(paramsBuffer+paramOffset, arg, argSize); paramOffset+=argSize; }
-	// New method of setting arguments
-	GPUResult addParam(OpenCLBuffer &buffer) {
- //
- if (isCudaCpu) {
- cudaCPUParams.paramPointers[cudaCPUParams.paramsCount]=buffer.cudaCPUbuf;
- cudaCPUParams.paramsCount++;
- }
- //
- 
- addArg(&buffer.cu_buf, sizeof(buffer.cu_buf));
- return GPU_SUCCESS;
-	}
- */
+#include "native_misc.h"
+
 namespace GPAPI {
     struct KernelLaunch {
-#ifdef TARGET_CUDA
+#if (defined TARGET_CUDA) || (defined TARGET_NATIVE)
         char paramsBuffer[4096]; // A buffer to hold parameter values
         void *paramsPtrs[1024]; // A buffer to hold pointers to each parameter
         int numParams;
@@ -36,7 +19,7 @@ namespace GPAPI {
         Kernel& kernel;
         int index;
         KernelLaunch(Kernel& kernel):kernel(kernel), index(0) {
-#ifdef TARGET_CUDA
+#if  (defined TARGET_CUDA) || (defined TARGET_NATIVE)
             numParams = paramOffset = 0;
 #endif
         
@@ -46,7 +29,7 @@ namespace GPAPI {
 #ifdef TARGET_OPENCL
             err = clSetKernelArg(kernel.get(), index++, sizeof(cl_mem), buffer.get());
 #endif
-#ifdef TARGET_CUDA
+#if  (defined TARGET_CUDA) || (defined TARGET_NATIVE)
             size_t argSize = sizeof(buffer.get());
             paramsPtrs[numParams++]=(paramsBuffer+paramOffset);
             memcpy(paramsBuffer+paramOffset, buffer.get(), argSize);
@@ -59,7 +42,7 @@ namespace GPAPI {
 #ifdef TARGET_OPENCL
             err = clSetKernelArg(kernel.get(), index++, sizeof(unsigned int), &arg);
 #endif
-#ifdef TARGET_CUDA
+#if  (defined TARGET_CUDA) || (defined TARGET_NATIVE)
             size_t argSize = sizeof(arg);
             paramsPtrs[numParams++]=(paramsBuffer+paramOffset);
             memcpy(paramsBuffer+paramOffset, &arg, argSize);
@@ -86,6 +69,10 @@ namespace GPAPI {
                                NULL
                                );
             popContext(context);
+#endif
+#ifdef TARGET_NATIVE
+            NativeDevice* device = getNativeDevice();
+            device->launchKernel(*this, globalSize * localSize);
 #endif
             CHECK_ERROR(err);
         }

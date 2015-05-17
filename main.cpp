@@ -1,23 +1,9 @@
 
-#include <memory>
-#include <fstream>
-#include <vector>
-#include <chrono>
-#include <cmath>
+
 #include <thread>
-#include <future>
-#include <ctime>
 
-#define TARGET_CUDA
-//#define TARGET_OPENCL
-
-#include "buffer.h"
-#include "opencl_misc.h"
-#include "cuda_misc.h"
-#include "queue.h"
-#include "kernel.h"
-#include "kernel_launch.h"
-#include "device.h"
+#include "configure.h"
+#include "gpapi.h"
 
 using namespace GPAPI;
 
@@ -95,18 +81,6 @@ struct DeviceVecAdd : Device {
 };
 
 
-template <typename PLATFORMS, typename DEVICES, typename NAMES, typename CONTEXTS, typename PROGRAMS>
-inline void initGPU(PLATFORMS& platformIds, DEVICES& deviceIds, NAMES& deviceNames, CONTEXTS& contextIds, PROGRAMS& programIds, const::std::string& source) {
-#ifdef TARGET_OPENCL
-    initOpenCL(platformIds, deviceIds, deviceNames, contextIds, programIds, source);
-#endif //TARGET_OPENCL
-    
-#ifdef TARGET_CUDA
-    initCUDA(platformIds, deviceIds, deviceNames, contextIds, programIds, source);
-#endif
-}
-
-
 int main(int argc, const char * argv[]) {
     using namespace std;
     
@@ -118,7 +92,7 @@ int main(int argc, const char * argv[]) {
 
     std::string source = getProgramSource("/Developer/git/opencl/opencl/kernel.cl");
     
-    initGPU(platformIds, deviceIds, deviceNames, contextIds, programIds, source);
+    initGPAPI(platformIds, deviceIds, deviceNames, contextIds, programIds, source);
     
     std::unique_ptr<DeviceVecAdd[]> devices(new DeviceVecAdd[deviceIds.size()]);
     
@@ -130,6 +104,8 @@ int main(int argc, const char * argv[]) {
     
     for (auto& t: threads)
         t.join();
+    
+    freeGPAPI(platformIds, deviceIds, deviceNames, contextIds, programIds);
     
     return 0;
 }

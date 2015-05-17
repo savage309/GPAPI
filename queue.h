@@ -1,14 +1,10 @@
-//
-//  queue.h
-//  opencl
-//
-//  Created by savage309 on 17.05.15.
-//  Copyright (c) 2015 г. savage309. All rights reserved.
-//
-
 #ifndef opencl_queue_h
 #define opencl_queue_h
 #include "common.h"
+
+#if !(defined __GPAPI_H__) && !(defined __GPAPI_NATIVE_MISC_H__)
+#   error For GPAPI you need only to include gpapi.h
+#endif
 
 namespace GPAPI {
     struct Queue {
