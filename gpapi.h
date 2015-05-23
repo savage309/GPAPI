@@ -51,7 +51,7 @@ namespace GPAPI {
         }
 
         if (!devices.size()) {
-            printLog(LogType::Warning, "No valid devices found\n");
+            printLog(LogTypeWarning, "No valid devices found\n");
         }
     }
     

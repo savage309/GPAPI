@@ -88,7 +88,7 @@
 
 namespace GPAPI {
 
-enum class LogType { Info = 0, Warning, Error, None };
+enum LogType { LogTypeInfo = 0, LogTypeWarning, LogTypeError, LogTypeNone };
 
 inline
 void printLog(LogType priority, const char *format, ...) {
@@ -104,13 +104,13 @@ void printLog(LogType priority, const char *format, ...) {
     
     printf("%s", s);
     switch (priority) {
-        case LogType::Info:
+        case LogTypeInfo:
             printf("Info: ");
             break;
-        case LogType::Warning:
+        case LogTypeWarning:
             printf("Warning: ");
             break;
-        case LogType::Error:
+        case LogTypeError:
             printf("Error: ");
             break;
         default:
@@ -129,7 +129,7 @@ template<typename T>
 inline
 void __checkError(T error, const char* file, int line) {
     if (error != 0) {
-        printLog(LogType::Error, "error %i in file %s, line %i", error, file, line);
+        printLog(LogTypeError, "error %i in file %s, line %i", error, file, line);
         exit(error);
     }
 }

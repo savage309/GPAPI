@@ -42,7 +42,7 @@ namespace GPAPI {
             CHECK_ERROR(err);
             deviceNames.push_back(std::string((char*)buffer));
             
-            printLog(LogType::Info, "found device '%i' = %s\n", i, buffer);
+            printLog(LogTypeInfo, "found device '%i' = %s\n", i, buffer);
             
             GPU_CONTEXT pctx;
             err = cuCtxCreate(&pctx, CU_CTX_SCHED_AUTO, device);
@@ -66,7 +66,7 @@ namespace GPAPI {
             
             nvRes = nvrtcGetProgramLog(program, log);
             CHECK_ERROR(nvRes);
-            printLog(LogType::Error, "%s", log);
+            printLog(LogTypeError, "%s", log);
             
             delete[] log;
         }
@@ -114,7 +114,7 @@ namespace GPAPI {
             err = cuModuleLoadDataEx(&program, ptx, JIT_NUM_OPTIONS, jitOptions, jitValues);
             CHECK_ERROR(err);
             programIds.push_back(program);
-            printLog(LogType::Info, "program for device %i compiled\n", i);
+            printLog(LogTypeInfo, "program for device %i compiled\n", i);
         }
         nvRes = nvrtcDestroyProgram(&program);
         CHECK_ERROR(nvRes);

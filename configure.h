@@ -7,7 +7,7 @@
 /// When Warning is set, log messages with types Warning and Error are printed
 /// When Error is set, only log messages with type Error are printed
 /// When None is set, nothing is printed
-#define LOG_LEVEL LogType::Info
+#define LOG_LEVEL LogTypeInfo
 
 /// Sets the target, for which the project should be build. TARGET_CUDA, TARGET_OPENCL and TARGET_NATIVE are available
 #define TARGET_CUDA

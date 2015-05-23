@@ -1,18 +1,30 @@
 
-#include <thread>
+#if __cplusplus >= 201103L
+#define CPP11
+#endif
+
+#ifdef CPP11
+#define MOVE std::move
+#else
+template <typename T>
+T MOVE(T& t) {
+    return t;
+}
+#endif
 
 #include "gpapi.h"
 
 using namespace GPAPI;
 
 std::string getProgramSource(const std::string& path) {
-    std::ifstream programSource(path);
+    std::ifstream programSource;
+    programSource.open(path.c_str());
     if (!programSource.good()) {
-        printLog(LogType::Error, "program source not found\n");
+        printLog(LogTypeError, "program source not found\n");
         exit(EXIT_FAILURE);
     }
     std::string source((std::istreambuf_iterator<char>(programSource)),std::istreambuf_iterator<char>());
-    return std::move(source);
+    return MOVE(source);
 }
 
 int main(int argc, const char * argv[]) {
@@ -33,9 +45,9 @@ int main(int argc, const char * argv[]) {
     
     //now prepare some host buffers that will be transfered to the devices
     int NUM_ELEMENTS = 1024;
-    std::unique_ptr<int[]> h_a (new int[NUM_ELEMENTS]);
-    std::unique_ptr<int[]> h_b (new int[NUM_ELEMENTS]);
-    std::unique_ptr<int[]> h_c (new int[NUM_ELEMENTS]);
+    int* h_a = new int[NUM_ELEMENTS];
+    int* h_b = new int[NUM_ELEMENTS];
+    int* h_c = new int[NUM_ELEMENTS];
     for (int i = 0; i < NUM_ELEMENTS; ++i) {
         h_a[i] = i;
         h_b[i] = i * 2;
@@ -49,17 +61,15 @@ int main(int argc, const char * argv[]) {
     
     // Number of total work items - localSize must be devisor
     globalSize = ceil(NUM_ELEMENTS/(float)localSize)*localSize;
-    
-    std::vector<std::thread> threads;
-    
+  
     for (int i = 0; i < devices.size(); ++i) {
         Device& device = *(devices[i]);
         //set the kernel name we want to call
         device.setKernel("vecAdd");
         //our kernel has 4 args - 2 input buffers, 1 ouptut buffer and a size
         //set those args
-        device.addParam(h_a.get(), bytes);
-        device.addParam(h_b.get(), bytes);
+        device.addParam(h_a, bytes);
+        device.addParam(h_b, bytes);
         Buffer* result = device.addParam(NULL, bytes);
         device.addParam(NUM_ELEMENTS);
         
@@ -68,7 +78,7 @@ int main(int argc, const char * argv[]) {
         //wait for the result
         device.wait();
         //copy back the data of the result from the device to the host
-        result->download(device.queue.get(), device.context, h_c.get(), bytes);
+        result->download(device.queue.get(), device.context, h_c, bytes);
         
         for (int i = 0; i < NUM_ELEMENTS; ++i) {
             printf ("%i ", h_c[i]);
