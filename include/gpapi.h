@@ -5,7 +5,7 @@
 #include "configure.h"
 
 #if !(defined TARGET_OPENCL) && !(defined TARGET_CUDA) && !(defined TARGET_NATIVE)
-#   error GPAPI::opencl_misc needs one of CUDA, OpenCL or NATIVE targets to be defined
+#   error GPAPI needs one of CUDA, OpenCL or NATIVE targets to be defined
 #endif
 
 #if __cplusplus >= 201103L

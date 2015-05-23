@@ -58,25 +58,25 @@ struct float4 {
 #endif
 
 #if !defined(__OPENCL_VERSION__)
-DEVICE float dot( float4 a, float4 b) { return a.x*b.x + a.y*b.y + a.z*b.z + a.w*b.w; }
-DEVICE float length( float4 v ) { return sqrtf( v.x*v.x + v.y*v.y + v.z*v.z + v.w*v.w ); }
-DEVICE float4 normalize( float4 v ){ float l = 1.0f / sqrtf( dot(v,v) ); return FLOAT4( v.x*l, v.y*l, v.z*l, v.w*l ); }
-DEVICE float4 cross( float4 a, float4 b ) { return FLOAT4(a.y*b.z-a.z*b.y, a.z*b.x-a.x*b.z, a.x*b.y-a.y*b.x, 0.0f ); }
+DEVICE float dot(float4 a, float4 b) { return a.x*b.x + a.y*b.y + a.z*b.z + a.w*b.w; }
+DEVICE float length(float4 v) { return sqrtf( v.x*v.x + v.y*v.y + v.z*v.z + v.w*v.w ); }
+DEVICE float4 normalize(float4 v) { float l = 1.0f / sqrtf( dot(v,v) ); return FLOAT4( v.x*l, v.y*l, v.z*l, v.w*l ); }
+DEVICE float4 cross(float4 a, float4 b) { return FLOAT4(a.y*b.z-a.z*b.y, a.z*b.x-a.x*b.z, a.x*b.y-a.y*b.x, 0.0f ); }
 DEVICE float clamp(float f, float a, float b) {  return max(a, min(f, b)); }
-DEVICE float4 operator*(const float4 &a, const float b ) { return FLOAT4( a.x*b, a.y*b, a.z*b, a.w*b); }
-DEVICE float4 operator/(const float4 &a, const float b ) { return FLOAT4( a.x/b, a.y/b, a.z/b, a.w/b );}
-DEVICE float4 operator*(const float b, const float4 &a) { return FLOAT4( a.x*b, a.y*b, a.z*b, a.w*b ); }
-DEVICE float4 operator+(const float4 &a, const float4 &b ) { return FLOAT4( a.x+b.x, a.y+b.y, a.z+b.z, a.w+b.w ); }
-DEVICE float4 operator-(const float4 &a, const float4 &b ) { return FLOAT4( a.x-b.x, a.y-b.y, a.z-b.z, a.w-b.w );}
-DEVICE float4 operator*(const float4 &a, const float4 &b ) { return FLOAT4( a.x*b.x, a.y*b.y, a.z*b.z, a.w*b.w ); }
-DEVICE float4 operator-(const float4 &b) { return FLOAT4( -b.x, -b.y, -b.z, -b.w );}
-DEVICE float4 min( const float4 &a, const float4 &b ) { return FLOAT4( min(a.x,b.x), min(a.y,b.y), min(a.z,b.z), min(a.w,b.w) );}
-DEVICE float4 max( const float4 &a, const float4 &b ) { return FLOAT4( max(a.x,b.x), max(a.y,b.y), max(a.z,b.z), max(a.w,b.w) ); }
-DEVICE float4& operator*=(float4 &a, const float4 &b ) { a.x*=b.x; a.y*=b.y; a.z*=b.z; a.w*=b.w; return a; }
-DEVICE float4& operator*=(float4 &a, const float &b ) { a.x*=b; a.y*=b; a.z*=b; a.w*=b; return a; }
-DEVICE float4& operator+=(float4 &a, const float4 &b ) { a.x+=b.x; a.y+=b.y; a.z+=b.z; a.w+=b.w; return a; }
-DEVICE float4& operator-=(float4 &a, const float4 &b ) { a.x-=b.x; a.y-=b.y; a.z-=b.z; a.w-=b.w; return a; }
-DEVICE float4& operator/=(float4 &a, const float &b ) { a.x/=b; a.y/=b; a.z/=b; a.w/=b; return a; }
+DEVICE float4 operator*(const float4& a, const float b) { return FLOAT4( a.x*b, a.y*b, a.z*b, a.w*b); }
+DEVICE float4 operator/(const float4& a, const float b) { return FLOAT4( a.x/b, a.y/b, a.z/b, a.w/b );}
+DEVICE float4 operator*(const float b, const float4& a) { return FLOAT4( a.x*b, a.y*b, a.z*b, a.w*b ); }
+DEVICE float4 operator+(const float4& a, const float4& b) { return FLOAT4( a.x+b.x, a.y+b.y, a.z+b.z, a.w+b.w ); }
+DEVICE float4 operator-(const float4& a, const float4& b) { return FLOAT4( a.x-b.x, a.y-b.y, a.z-b.z, a.w-b.w );}
+DEVICE float4 operator*(const float4& a, const float4& b) { return FLOAT4( a.x*b.x, a.y*b.y, a.z*b.z, a.w*b.w ); }
+DEVICE float4 operator-(const float4& b) { return FLOAT4( -b.x, -b.y, -b.z, -b.w );}
+DEVICE float4 min(const float4& a, const float4& b) { return FLOAT4( min(a.x,b.x), min(a.y,b.y), min(a.z,b.z), min(a.w,b.w) );}
+DEVICE float4 max(const float4& a, const float4& b) { return FLOAT4( max(a.x,b.x), max(a.y,b.y), max(a.z,b.z), max(a.w,b.w) ); }
+DEVICE float4& operator*=(float4& a, const float4& b) { a.x*=b.x; a.y*=b.y; a.z*=b.z; a.w*=b.w; return a; }
+DEVICE float4& operator*=(float4& a, const float& b) { a.x*=b; a.y*=b; a.z*=b; a.w*=b; return a; }
+DEVICE float4& operator+=(float4& a, const float4& b) { a.x+=b.x; a.y+=b.y; a.z+=b.z; a.w+=b.w; return a; }
+DEVICE float4& operator-=(float4& a, const float4& b) { a.x-=b.x; a.y-=b.y; a.z-=b.z; a.w-=b.w; return a; }
+DEVICE float4& operator/=(float4& a, const float& b) { a.x/=b; a.y/=b; a.z/=b; a.w/=b; return a; }
 #endif
 
 
@@ -106,7 +106,6 @@ void vecAdd(GLOBAL int * RESTRICT a,
 {
     //Get our global thread ID
     int id = globalID();
-
     //Make sure we do not go out of bounds
     for (int i = 0; i < n; ++i) {
         if (id < n) {
