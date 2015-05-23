@@ -1,19 +1,12 @@
-
-
-
 #include "gpapi.h"
 
 using namespace GPAPI;
 
+/*! \return Content of the file, that has absolute path 'path' */
 std::string getProgramSource(const std::string& path) {
-    std::ifstream programSource;
-    programSource.open(path.c_str());
-    if (!programSource.good()) {
-        printLog(LogTypeError, "program source not found\n");
-        exit(EXIT_FAILURE);
-    }
-    std::string source((std::istreambuf_iterator<char>(programSource)),std::istreambuf_iterator<char>());
-    return MOVE(source);
+    std::ifstream programSource(path.c_str());
+    if (!programSource.good()) printLog(LogTypeError, "program source not found\n");
+    return std::string((std::istreambuf_iterator<char>(programSource)),std::istreambuf_iterator<char>());
 }
 
 int main(int argc, const char * argv[]) {
@@ -32,7 +25,7 @@ int main(int argc, const char * argv[]) {
     //call initGPAPI to init the devices
     initGPAPI(devices, source, initParams);
     
-    //now prepare some host buffers that will be transfered to the devices
+    //now prepare some host buffers that will be transfering to the devices
     int NUM_ELEMENTS = 1024;
     int* h_a = new int[NUM_ELEMENTS];
     int* h_b = new int[NUM_ELEMENTS];
@@ -73,7 +66,7 @@ int main(int argc, const char * argv[]) {
             printf ("%i ", h_c[i]);
         }
         
-        //and clean up
+        //clean up
         device.freeMem();
     }
     
