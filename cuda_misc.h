@@ -11,8 +11,8 @@
 #include "init_params.h"
 
 namespace GPAPI {
-    template <typename PLATFORMS, typename DEVICES, typename NAMES, typename CONTEXTS, typename PROGRAMS>
-    void initCUDA(PLATFORMS& platformIds, DEVICES& deviceIds, NAMES& deviceNames, CONTEXTS& contextIds, PROGRAMS& programIds, const::std::string& source, InitParams initParams) {
+    template <typename PLATFORMS, typename DEVICES, typename NAMES, typename CONTEXTS, typename PROGRAMS, typename LOCAL_MEM, typename THREADS_PER_BLOCK>
+    void initCUDA(PLATFORMS& platformIds, DEVICES& deviceIds, NAMES& deviceNames, CONTEXTS& contextIds, PROGRAMS& programIds, const::std::string& source, LOCAL_MEM& localMemory, THREADS_PER_BLOCK& threadsPerBlock, InitParams initParams) {
         
         GPU_RESULT err = GPU_SUCCESS;
         err = cuInit(0);
@@ -40,9 +40,21 @@ namespace GPAPI {
                                          device
                                      );
             CHECK_ERROR(err);
+            
             deviceNames.push_back(std::string((char*)buffer));
             
-            printLog(LogTypeInfo, "found device '%i' = %s\n", i, buffer);
+            int sharedMemSize;
+            err = cuDeviceGetAttribute(&sharedMemSize, CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_BLOCK, device);
+            CHECK_ERROR(err);
+            localMemory.push_back(sharedMemSize);
+            
+            int threads;
+            err = cuDeviceGetAttribute(&threads, CU_DEVICE_ATTRIBUTE_MAX_THREADS_PER_BLOCK, device);
+            CHECK_ERROR(err);
+            threadsPerBlock.push_back(threads);
+            
+            printLog(LogTypeInfo, "found device '%i' = %s, sharedMem=%i, threadsPerBlock=%i\n", i, buffer, sharedMemSize, threads);
+
             
             GPU_CONTEXT pctx;
             err = cuCtxCreate(&pctx, CU_CTX_SCHED_AUTO, device);

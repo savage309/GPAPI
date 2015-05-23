@@ -29,13 +29,15 @@ namespace GPAPI {
         std::vector<Context> contextIds;
         std::vector<Program> programIds;
         std::vector<std::string> deviceNames;
+        std::vector<size_t> localMemSize;
+        std::vector<size_t> threadsPerBlock;
         
 #ifdef TARGET_OPENCL
-        initOpenCL(platformIds, deviceIds, deviceNames, contextIds, programIds, source, initParams);
+        initOpenCL(platformIds, deviceIds, deviceNames, contextIds, programIds, source, localMemSize, threadsPerBlock, initParams);
 #endif //TARGET_OPENCL
         
 #ifdef TARGET_CUDA
-        initCUDA(platformIds, deviceIds, deviceNames, contextIds, programIds, source, initParams);
+        initCUDA(platformIds, deviceIds, deviceNames, contextIds, programIds, source, localMemSize, threadsPerBlock, initParams);
 #endif
 #ifdef TARGET_NATIVE
         platformIds.push_back(0);
@@ -43,10 +45,14 @@ namespace GPAPI {
         deviceNames.push_back("NATIVE");
         contextIds.push_back(0);
         programIds.push_back(0);
+        threadsPerBlock.push_back(1);
+        localMemSize.push_back(1024 * 1024);
+        printLog(LogTypeInfo, "found device 0 = \"Native\", sharedMem=%i, threadsPerBlock=%i\n", (int)localMemSize[0], (int)threadsPerBlock[0]);
+
 #endif
         for (int i = 0; i < deviceIds.size(); ++i) {
             DEVICE* d = new DEVICE;
-            d->init(platformIds[0], deviceIds[i], deviceNames[i], contextIds[i], programIds[i], getVendorType(deviceNames[i]), getDeviceType(deviceNames[i]));
+            d->init(platformIds[0], deviceIds[i], deviceNames[i], contextIds[i], programIds[i], getVendorType(deviceNames[i]), getDeviceType(deviceNames[i]), localMemSize[i], threadsPerBlock[i]);
             devices.push_back(d);
         }
 
@@ -63,11 +69,11 @@ namespace GPAPI {
         for (int i = 0; i < devices.size(); ++i) {
             devices[i]->freeMem();
             
-            err = clReleaseDevice(devices[i]->device);
+            err = clReleaseDevice(devices[i]->getID());
             CHECK_ERROR(err);
-            err = clReleaseContext(devices[i]->context);
+            err = clReleaseContext(devices[i]->getContext());
             CHECK_ERROR(err);
-            err = clReleaseProgram(devices[i]->program);
+            err = clReleaseProgram(devices[i]->getProgram());
             CHECK_ERROR(err);
         }
         
@@ -76,9 +82,9 @@ namespace GPAPI {
         for (int i = 0; i < devices.size(); ++i) {
             devices[i]->freeMem();
 
-            err = cuModuleUnload(devices[i]->program);
+            err = cuModuleUnload(devices[i]->getProgram());
             CHECK_ERROR(err);
-            err = cuCtxDestroy(devices[i]->context);
+            err = cuCtxDestroy(devices[i]->getContext());
             CHECK_ERROR(err);
         }
 #endif

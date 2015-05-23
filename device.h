@@ -16,22 +16,11 @@ namespace GPAPI {
         std::string name;
         typedef  InitParams::VendorParams::VendorType VendorType;
         typedef InitParams::VendorParams::DeviceType DeviceType;
-        DeviceType deviceType;
-        VendorType vendorType;
         
-        Platform platform;
-        DeviceID device;
-        Context context;
-        Program program;
-        Kernel kernel;
-        Queue queue;
-        
-        KernelLaunch kernelLaunch;
-        
-        std::vector<Buffer*> buffers;
-        
-        virtual void init(Platform platformId, DeviceID deviceId, std::string nameId, Context contextId, Program programId, VendorType vendorTypeId, DeviceType deviceTypeId) {
+        virtual void init(Platform platformId, DeviceID deviceId, std::string nameId, Context contextId, Program programId, VendorType vendorTypeId, DeviceType deviceTypeId, size_t localMemSizeId, size_t threadPerBlockId) {
             freeMem();
+            maxLocalMemSize = localMemSizeId;
+            maxThreadsPerBlock = threadPerBlockId;
             
             platform = platformId;
             device = deviceId;
@@ -42,10 +31,10 @@ namespace GPAPI {
             queue.init(device, context);
         }
         
-        virtual void launchKernel(size_t globalSize, size_t localSize) {
+        void launchKernel(size_t globalSize, size_t localSize) {
             kernelLaunch.run(queue.get(), context, globalSize, localSize);
         };
-        virtual void freeMem() {
+        void freeMem() {
             for (int i = 0; i < buffers.size(); ++i) {
                 buffers[i]->freeMem();
                 delete buffers[i];
@@ -74,8 +63,37 @@ namespace GPAPI {
         void wait(){
             kernelLaunch.wait(queue.get(), context);
         }
-        virtual ~Device(){
+        
+        
+        ~Device(){
             freeMem();
         }
+        
+        DeviceType getType() const { return deviceType; }
+        VendorType getVendor() const { return vendorType; }
+        Platform getPlatform() const { return platform; }
+        Context getContext() const { return context; }
+        DeviceID getID() const { return device; }
+        Program getProgram() const { return program; }
+        Kernel getKernel() const { return kernel; }
+        GPU_QUEUE getQueue() const { return queue.get();}
+        size_t getLocalMemSize() const { return maxLocalMemSize; }
+        size_t getThreadsPerBlock() const { return maxThreadsPerBlock; }
+    private:
+        DeviceType deviceType;
+        VendorType vendorType;
+        
+        Platform platform;
+        DeviceID device;
+        Context context;
+        Program program;
+        Kernel kernel;
+        Queue queue;
+        KernelLaunch kernelLaunch;
+        //
+        size_t maxLocalMemSize;
+        size_t maxThreadsPerBlock;
+        //
+        std::vector<Buffer*> buffers;
     };
 }

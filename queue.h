@@ -35,7 +35,7 @@ namespace GPAPI {
 #endif
         }
         
-        GPU_QUEUE get() {
+        GPU_QUEUE get() const {
             return queue;
         }
         

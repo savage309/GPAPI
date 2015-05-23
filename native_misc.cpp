@@ -33,10 +33,10 @@ void GPAPI::NativeDevice::launchKernel(KernelLaunch& kernelLaunch, size_t numTas
         
         int** paramsPtrs = (int**)kernelLaunch.ptrs;
         
-        vecAdd(paramsPtrs[KernelParams::D_A],
-               paramsPtrs[KernelParams::D_B],
-               paramsPtrs[KernelParams::D_RES],
-               *(int*)paramsPtrs[KernelParams::COUNT]);
+        vecAdd(paramsPtrs[D_A],
+               paramsPtrs[D_B],
+               paramsPtrs[D_RES],
+               *(int*)paramsPtrs[COUNT]);
     }
 }
 

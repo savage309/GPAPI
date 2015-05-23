@@ -78,7 +78,7 @@ int main(int argc, const char * argv[]) {
         //wait for the result
         device.wait();
         //copy back the data of the result from the device to the host
-        result->download(device.queue.get(), device.context, h_c, bytes);
+        result->download(device.getQueue(), device.getContext(), h_c, bytes);
         
         for (int i = 0; i < NUM_ELEMENTS; ++i) {
             printf ("%i ", h_c[i]);

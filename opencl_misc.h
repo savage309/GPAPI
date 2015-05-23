@@ -9,7 +9,10 @@
 #endif
 
 namespace GPAPI {
-    
+    /*! Returns VendorType from the device name. Warning - this is done with basic string parsing and it is not reliable
+     \param deviceName The name of the device, that will be parsed to try to understand what the device vendor is
+     \return One of VendorType enum values
+     */
     inline
     InitParams::VendorParams::VendorType
     getVendorType(std::string deviceName) {
@@ -39,6 +42,10 @@ namespace GPAPI {
 #endif
     }
     
+    /*! Returns DeviceType from the device name. Warning - this is done with basic string parsing and it is not reliable
+     \param deviceName The name of the device, that will be parsed to try to understand what the device type is
+     \return One of DeviceType enum values
+     */
     inline
     InitParams::VendorParams::DeviceType
     getDeviceType(std::string deviceName) {
@@ -85,12 +92,13 @@ namespace GPAPI {
             err = clGetPlatformInfo(platforms[i], CL_PLATFORM_NAME, 1024, &chBuffer, NULL);
             CHECK_ERROR(err);
             
-            printLog(LogType::Info, "found platform '%i' = \"%s\"\n", i, chBuffer);
+            printLog(LogTypeInfo, "found platform '%i' = \"%s\"\n", i, chBuffer);
         }
     }
     
-    template <typename D, typename N, typename P>
-    void getOCLDevices(D& devices, N& names, const P& platforms, int numMaxDevices = std::numeric_limits<int>::max()) {
+    template <typename D, typename N, typename P, typename LOCAL_MEM, typename THREADS_PER_BLOCK>
+    void getOCLDevices(D& devices, N& names, const P& platforms, LOCAL_MEM& localMem, THREADS_PER_BLOCK& threadsPerBlock)
+    {
         GPU_RESULT err = GPU_SUCCESS;
         
         GPU_INT numDevices = 0;
@@ -99,10 +107,6 @@ namespace GPAPI {
             err = clGetDeviceIDs(platforms[i], CL_DEVICE_TYPE_ALL, 0, NULL, &devicesCount);
             CHECK_ERROR(err);
             numDevices += devicesCount;
-        }
-        
-        if (numDevices > numMaxDevices) {
-            numDevices = numMaxDevices;
         }
         
         devices.resize(numDevices);
@@ -117,7 +121,17 @@ namespace GPAPI {
                 err = clGetDeviceInfo(devices[i], CL_DEVICE_NAME, sizeof(buffer), buffer, NULL);
                 CHECK_ERROR(err);
                 names.push_back(buffer);
-                printLog(LogType::Info, "found device '%i' = \"%s\"\n", i, buffer);
+                
+                cl_ulong mem;
+                err = clGetDeviceInfo(devices[i], CL_DEVICE_LOCAL_MEM_SIZE, sizeof(cl_ulong), &mem, NULL);
+                CHECK_ERROR(err);
+                localMem.push_back(mem);
+                
+                size_t size;
+                err = clGetDeviceInfo(devices[i], CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(cl_ulong), &size, NULL);
+                threadsPerBlock.push_back(size);
+
+                printLog(LogTypeInfo, "found device '%i' = \"%s\", sharedMem=%i, threadsPerBlock=%i\n", i, buffer, (int)mem, (int)size);
             }
         }
     }
@@ -165,11 +179,11 @@ namespace GPAPI {
                 char buildLog[2048];
                 err = clGetProgramBuildInfo (programs[i],devices[i],CL_PROGRAM_BUILD_LOG,2048,buildLog,&buildLogSize);
                 CHECK_ERROR(err);
-                printLog(LogType::Error, "*** %s", buildLog);
+                printLog(LogTypeError, "*** %s", buildLog);
                 
             }
             CHECK_ERROR(err);
-            printLog(LogType::Info, "program %i compiled successfully\n", i);
+            printLog(LogTypeInfo, "program %i compiled successfully\n", i);
         }
     }
     
@@ -182,17 +196,18 @@ namespace GPAPI {
         }
     }
     
-    template <typename PLATFORMS, typename DEVICES, typename NAMES, typename CONTEXTS, typename PROGRAMS>
-    void initOpenCL(PLATFORMS& platformIds, DEVICES& deviceIds, NAMES& deviceNames, CONTEXTS& contextIds, PROGRAMS& programIds, const::std::string& source, InitParams initParams) {
+    template <typename PLATFORMS, typename DEVICES, typename NAMES, typename CONTEXTS, typename PROGRAMS, typename LOCAL_MEM, typename THREADS_PER_BLOCK>
+    void initOpenCL(PLATFORMS& platformIds, DEVICES& deviceIds, NAMES& deviceNames, CONTEXTS& contextIds, PROGRAMS& programIds, const::std::string& source, LOCAL_MEM& localMem, THREADS_PER_BLOCK& threadsPerBlock, InitParams initParams)
+    {
         getOCLPlatforms(platformIds);
-        getOCLDevices(deviceIds, deviceNames, platformIds);
+        getOCLDevices(deviceIds, deviceNames, platformIds, localMem, threadsPerBlock);
         
         std::vector<int> indexesToDelete;
         for (int i = 0; i < deviceNames.size(); ++i) {
             InitParams::VendorParams::VendorType vendorType = getVendorType(deviceNames[i]);
             InitParams::VendorParams::DeviceType deviceType = getDeviceType(deviceNames[i]);
             if (!initParams.isActive(vendorType, deviceType, i)) {
-                printLog(LogType::Info, "Skipped device named %s\n", deviceNames[i].c_str());
+                printLog(LogTypeInfo, "Skipped device named %s\n", deviceNames[i].c_str());
                 indexesToDelete.push_back(i);
             }
         }
@@ -200,6 +215,8 @@ namespace GPAPI {
         for (int i = 0; i < indexesToDelete.size(); ++i) {
             deviceIds.erase(deviceIds.begin() + i);
             deviceNames.erase(deviceNames.begin() + i);
+            localMem.erase(localMem.begin() + i);
+            threadsPerBlock.erase(threadsPerBlock.begin() + i);
         }
         
         getOCLContexts(contextIds, deviceIds, platformIds);

@@ -10,6 +10,6 @@
 #define LOG_LEVEL LogTypeInfo
 
 /// Sets the target, for which the project should be build. TARGET_CUDA, TARGET_OPENCL and TARGET_NATIVE are available
-#define TARGET_CUDA
-//#define TARGET_OPENCL
+//#define TARGET_CUDA
+#define TARGET_OPENCL
 //#define TARGET_NATIVE
