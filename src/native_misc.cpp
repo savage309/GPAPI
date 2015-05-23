@@ -11,7 +11,7 @@
 
 
 static int threadIdx;
-#include "kernel.cl"
+#include "../kernel.cl"
 
 enum KernelParams {
     D_A = 0,
