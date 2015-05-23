@@ -1,4 +1,5 @@
-#ifndef __GPAPI_H__
+#pragma once
+
 #define __GPAPI_H__
 
 #include "configure.h"
@@ -7,6 +8,7 @@
 #   error GPAPI::opencl_misc needs one of CUDA, OpenCL or NATIVE targets to be defined
 #endif
 
+#include <algorithm>
 
 #include "buffer.h"
 #include "opencl_misc.h"
@@ -19,8 +21,9 @@
 
 namespace GPAPI {
     
+    
     template <typename DEVICE>
-    inline void initGPAPI(std::vector<DEVICE*>& devices, const::std::string& source) {
+    inline void initGPAPI(std::vector<DEVICE*>& devices, const::std::string& source, InitParams initParams = InitParams()) {
         std::vector<Platform> platformIds;
         std::vector<DeviceID> deviceIds;
         std::vector<Context> contextIds;
@@ -28,11 +31,11 @@ namespace GPAPI {
         std::vector<std::string> deviceNames;
         
 #ifdef TARGET_OPENCL
-        initOpenCL(platformIds, deviceIds, deviceNames, contextIds, programIds, source);
+        initOpenCL(platformIds, deviceIds, deviceNames, contextIds, programIds, source, initParams);
 #endif //TARGET_OPENCL
         
 #ifdef TARGET_CUDA
-        initCUDA(platformIds, deviceIds, deviceNames, contextIds, programIds, source);
+        initCUDA(platformIds, deviceIds, deviceNames, contextIds, programIds, source, initParams);
 #endif
 #ifdef TARGET_NATIVE
         platformIds.push_back(0);
@@ -43,10 +46,13 @@ namespace GPAPI {
 #endif
         for (int i = 0; i < deviceIds.size(); ++i) {
             DEVICE* d = new DEVICE;
-            d->init(platformIds[0], deviceIds[i], deviceNames[i], contextIds[i], programIds[i]);
+            d->init(platformIds[0], deviceIds[i], deviceNames[i], contextIds[i], programIds[i], getVendorType(deviceNames[i]), getDeviceType(deviceNames[i]));
             devices.push_back(d);
         }
 
+        if (!devices.size()) {
+            printLog(LogType::Warning, "No valid devices found\n");
+        }
     }
     
     
@@ -55,6 +61,8 @@ namespace GPAPI {
         GPU_RESULT err = GPU_SUCCESS;
 #ifdef TARGET_OPENCL
         for (int i = 0; i < devices.size(); ++i) {
+            devices[i]->freeMem();
+            
             err = clReleaseDevice(devices[i]->device);
             CHECK_ERROR(err);
             err = clReleaseContext(devices[i]->context);
@@ -66,6 +74,8 @@ namespace GPAPI {
 #endif
 #ifdef TARGET_CUDA
         for (int i = 0; i < devices.size(); ++i) {
+            devices[i]->freeMem();
+
             err = cuModuleUnload(devices[i]->program);
             CHECK_ERROR(err);
             err = cuCtxDestroy(devices[i]->context);
@@ -78,5 +88,3 @@ namespace GPAPI {
         CHECK_ERROR(err);
     }
 }
-
-#endif //__GPAPI_H__

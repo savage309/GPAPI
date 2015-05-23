@@ -1,7 +1,4 @@
-
-
-#ifndef opencl_kernel_h
-#define opencl_kernel_h
+#pragma once
 
 #include "common.h"
 
@@ -18,7 +15,26 @@ namespace GPAPI {
         GPU_KERNEL get() {
             return kernel;
         }
+        void freeMem() {
+            GPU_RESULT err = GPU_SUCCESS;
+            if (kernel) {
+                
+#ifdef TARGET_OPENCL
+                clReleaseKernel(kernel);
+#endif
+#ifdef TARGET_CUDA
+#endif
+                kernel = NULL;
+            }
+            CHECK_ERROR(err);
+
+        }
+        ~Kernel() {
+            freeMem();
+        }
         void init(const char* name, GPU_PROGRAM program) {
+            freeMem();
+            
             if (kernel)
                 return;
             
@@ -36,5 +52,3 @@ namespace GPAPI {
     };
 
 }
-
-#endif

@@ -1,5 +1,5 @@
-#ifndef opencl_queue_h
-#define opencl_queue_h
+#pragma once
+
 #include "common.h"
 
 #if !(defined __GPAPI_H__) && !(defined __GPAPI_NATIVE_MISC_H__)
@@ -31,15 +31,23 @@ namespace GPAPI {
         }
         void freeMem() {
 #ifdef TARGET_OPENCL
-            clReleaseCommandQueue(queue);
-            queue = NULL;
+           
 #endif
         }
         
         GPU_QUEUE get() {
             return queue;
         }
+        
+        ~Queue() {
+#ifdef TARGET_OPENCL
+             clReleaseCommandQueue(queue);
+             queue = NULL;
+#endif
+        }
+        
+    private:
+        Queue(const Queue&);
+        Queue& operator=(const Queue&);
     };
 }
-
-#endif

@@ -37,7 +37,7 @@ KERNEL
 void vecAdd(GLOBAL int *a, GLOBAL int *b, GLOBAL int *c, const unsigned int n) {
     //Get our global thread ID
     int id = getGlobalId();
-
+    
     //Make sure we do not go out of bounds
     for (int i = 0; i < n; ++i) {
         if (id < n) {
@@ -46,5 +46,17 @@ void vecAdd(GLOBAL int *a, GLOBAL int *b, GLOBAL int *c, const unsigned int n) {
             c[id] = ai + bi;
         }
     }
+}
+
+KERNEL
+void vecSubs(GLOBAL int *a, GLOBAL int *b, GLOBAL int *c, const unsigned int n) {
+    //Get our global thread ID
+    int id = getGlobalId();
     
+    //Make sure we do not go out of bounds
+    if (id < n) {
+        int ai = a[id];
+        int bi = b[id];
+        c[id] = ai - bi;
+    }
 }

@@ -1,13 +1,71 @@
+#pragma once
 
-#ifndef opencl_opencl_misc_h
-#define opencl_opencl_misc_h
 #include "common.h"
+
+#include "init_params.h"
 
 #ifndef __GPAPI_H__
 #   error For GPAPI you need only to include gpapi.h
 #endif
 
 namespace GPAPI {
+    
+    inline
+    InitParams::VendorParams::VendorType
+    getVendorType(std::string deviceName) {
+#ifdef TARGET_NATIVE
+        return InitParams::VendorParams::UnknownVendor;
+#endif
+#ifdef TARGET_CUDA
+        return InitParams::VendorParams::NVidia;
+#endif
+#ifdef TARGET_OPENCL
+        std::transform(deviceName.begin(), deviceName.end(), deviceName.begin(), ::tolower);
+        if (deviceName.find("intel") != std::string::npos) {
+            return InitParams::VendorParams::Intel;
+        } else if (deviceName.find("geforce") != std::string::npos ||
+                   deviceName.find("quadro") != std::string::npos ||
+                   deviceName.find("tesla") != std::string::npos) {
+            return InitParams::VendorParams::NVidia;
+        } else if (deviceName.find("nvidia") != std::string::npos) {
+            return InitParams::VendorParams::NVidia;
+        } else if (deviceName.find("hd graphics") != std::string::npos) {
+            return InitParams::VendorParams::Intel;
+        } else if (deviceName.find("amd") != std::string::npos) {
+            return InitParams::VendorParams::AMD;
+        }
+        
+        return InitParams::VendorParams::UnknownVendor;
+#endif
+    }
+    
+    inline
+    InitParams::VendorParams::DeviceType
+    getDeviceType(std::string deviceName) {
+#ifdef TARGET_NATIVE
+        return InitParams::VendorParams::UnkownDevice;
+#endif
+#ifdef TARGET_CUDA
+        return InitParams::VendorParams::GPU;
+#endif
+#ifdef TARGET_OPENCL
+        std::transform(deviceName.begin(), deviceName.end(), deviceName.begin(), ::tolower);
+        if (deviceName.find("intel(r) core") != std::string::npos) {
+            return InitParams::VendorParams::CPU;
+        } else if (deviceName.find("geforce") != std::string::npos ||
+                   deviceName.find("quadro") != std::string::npos ||
+                   deviceName.find("tesla") != std::string::npos) {
+            return InitParams::VendorParams::GPU;
+        } else if (deviceName.find("nvidia") != std::string::npos) {
+            return InitParams::VendorParams::GPU;
+        } else if (deviceName.find("hd graphics") != std::string::npos) {
+            return InitParams::VendorParams::GPU;
+        } else if (deviceName.find("hawaii") != std::string::npos) {
+            return InitParams::VendorParams::GPU;
+        }
+#endif
+        return InitParams::VendorParams::UnkownDevice;
+    }
     
 #ifdef TARGET_OPENCL
     template<typename P>
@@ -36,9 +94,9 @@ namespace GPAPI {
         GPU_RESULT err = GPU_SUCCESS;
         
         GPU_INT numDevices = 0;
-        for (auto& platform: platforms) {
+        for (int i =0; i < platforms.size(); ++i) {
             GPU_UINT devicesCount = 0;
-            err = clGetDeviceIDs(platform, CL_DEVICE_TYPE_ALL, 0, NULL, &devicesCount);
+            err = clGetDeviceIDs(platforms[i], CL_DEVICE_TYPE_ALL, 0, NULL, &devicesCount);
             CHECK_ERROR(err);
             numDevices += devicesCount;
         }
@@ -48,10 +106,10 @@ namespace GPAPI {
         }
         
         devices.resize(numDevices);
-        for (auto& platform: platforms) {
+        for (int i = 0; i < platforms.size(); ++i) {
             
             GPU_UINT devicesFound = 0;
-            err = clGetDeviceIDs(platform, CL_DEVICE_TYPE_ALL, numDevices, &devices[0], &devicesFound);
+            err = clGetDeviceIDs(platforms[i], CL_DEVICE_TYPE_ALL, numDevices, &devices[0], &devicesFound);
             CHECK_ERROR(err);
             
             for (int i = 0; i < devicesFound; ++i) {
@@ -125,14 +183,28 @@ namespace GPAPI {
     }
     
     template <typename PLATFORMS, typename DEVICES, typename NAMES, typename CONTEXTS, typename PROGRAMS>
-    void initOpenCL(PLATFORMS& platformIds, DEVICES& deviceIds, NAMES& deviceNames, CONTEXTS& contextIds, PROGRAMS& programIds, const::std::string& source) {
+    void initOpenCL(PLATFORMS& platformIds, DEVICES& deviceIds, NAMES& deviceNames, CONTEXTS& contextIds, PROGRAMS& programIds, const::std::string& source, InitParams initParams) {
         getOCLPlatforms(platformIds);
         getOCLDevices(deviceIds, deviceNames, platformIds);
+        
+        std::vector<int> indexesToDelete;
+        for (int i = 0; i < deviceNames.size(); ++i) {
+            InitParams::VendorParams::VendorType vendorType = getVendorType(deviceNames[i]);
+            InitParams::VendorParams::DeviceType deviceType = getDeviceType(deviceNames[i]);
+            if (!initParams.isActive(vendorType, deviceType, i)) {
+                printLog(LogType::Info, "Skipped device named %s\n", deviceNames[i].c_str());
+                indexesToDelete.push_back(i);
+            }
+        }
+        
+        for (int i = 0; i < indexesToDelete.size(); ++i) {
+            deviceIds.erase(deviceIds.begin() + i);
+            deviceNames.erase(deviceNames.begin() + i);
+        }
+        
         getOCLContexts(contextIds, deviceIds, platformIds);
         getOCLPrograms(programIds, contextIds, source.c_str());
         buildOCLPrograms(programIds, deviceIds);
     }
 #endif //TARGET_OPENCL
 }
-
-#endif

@@ -1,7 +1,8 @@
+#pragma once
 
-
-#ifndef opencl_common_h
-#define opencl_common_h
+#if (!defined TARGET_OPENCL) && !(defined TARGET_NATIVE) && !defined(TARGET_CUDA)
+#   error Exactly one of TARGET_OPENCL, TARGET_NATIVE and TARGET_CUDA should be defined
+#endif
 
 #if !(defined __GPAPI_H__) && !(defined __GPAPI_NATIVE_MISC_H__)
 #   error For GPAPI you need only to include gpapi.h
@@ -84,11 +85,17 @@
 #include <cmath>
 #include <ctime>
 
-enum class LogType { Info = 0, Warning, Error };
+
+namespace GPAPI {
+
+enum class LogType { Info = 0, Warning, Error, None };
 
 inline
 void printLog(LogType priority, const char *format, ...) {
-    static const LogType CURRENT_LOG_TYPE = LogType::Info;
+    
+    if(priority < LOG_LEVEL)
+        return;
+    
     char s[512];
     
     time_t t = time(NULL);
@@ -113,8 +120,7 @@ void printLog(LogType priority, const char *format, ...) {
     va_list args;
     va_start(args, format);
     
-    if(priority >= CURRENT_LOG_TYPE)
-        vprintf(format, args);
+    vprintf(format, args);
     
     va_end(args);
 }
@@ -147,4 +153,5 @@ void popContext(GPU_CONTEXT context) {
 }
 
 
-#endif
+
+}//namespace GPAPI

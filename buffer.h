@@ -1,6 +1,4 @@
-
-#ifndef opencl_buffer_h
-#define opencl_buffer_h
+#pragma once
 
 #include "common.h"
 
@@ -117,5 +115,3 @@ struct Buffer {
 };
 }
 
-
-#endif

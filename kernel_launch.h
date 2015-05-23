@@ -1,5 +1,4 @@
-#ifndef opencl_kernel_launch_h
-#define opencl_kernel_launch_h
+#pragma once
 
 #if !(defined __GPAPI_H__) && !(defined __GPAPI_NATIVE_MISC_H__)
 #   error For GPAPI you need only to include gpapi.h
@@ -22,27 +21,26 @@ namespace GPAPI {
         void* ptrs[1024];
 #endif
         
-        Kernel& kernel;
+        Kernel* kernel;
         int index;
-        KernelLaunch(Kernel& kernel):kernel(kernel), index(0) {
-#if  (defined TARGET_CUDA)
-            numParams = paramOffset = 0;
-#endif
-#if (defined TARGET_NATIVE)
-            numParams = 0;
-#endif
-        
+        KernelLaunch():kernel(NULL), index(0) {
         }
+        
+        void init(Kernel* newKernel) {
+            freeMem();
+            
+            kernel = newKernel;
+
+        }
+            
         void addArg(Buffer& buffer) {
             GPU_RESULT err = GPU_SUCCESS;
 #ifdef TARGET_OPENCL
-            err = clSetKernelArg(kernel.get(), index++, sizeof(cl_mem), buffer.get());
+            err = clSetKernelArg(kernel->get(), index++, sizeof(cl_mem), buffer.get());
 #endif
 #if  (defined TARGET_CUDA)
             size_t argSize = sizeof(buffer.get());
-            
-            printf("%p\n", buffer.get());
-            
+                        
             paramsPtrs[numParams++]=(paramsBuffer+paramOffset);
             memcpy(paramsBuffer+paramOffset, buffer.get(), argSize);
             paramOffset+=argSize;
@@ -56,7 +54,7 @@ namespace GPAPI {
         void addArg(int arg) {
             GPU_RESULT err = GPU_SUCCESS;
 #ifdef TARGET_OPENCL
-            err = clSetKernelArg(kernel.get(), index++, sizeof(unsigned int), &arg);
+            err = clSetKernelArg(kernel->get(), index++, sizeof(unsigned int), &arg);
 #endif
 #if  (defined TARGET_CUDA)
             size_t argSize = sizeof(arg);
@@ -75,15 +73,15 @@ namespace GPAPI {
 
         }
         
-        void run(Queue queue, Context context, size_t& globalSize, size_t& localSize) {
+        void run(GPU_QUEUE queue, Context context, size_t& globalSize, size_t& localSize) {
             GPU_RESULT err = GPU_SUCCESS;
 #ifdef TARGET_OPENCL
-            err = clEnqueueNDRangeKernel(queue.get(), kernel.get(), 1, NULL, &globalSize, &localSize,
+            err = clEnqueueNDRangeKernel(queue, kernel->get(), 1, NULL, &globalSize, &localSize,
                                          0, NULL, NULL);
 #endif
 #ifdef TARGET_CUDA
             pushContext(context);
-            err = cuLaunchKernel(kernel.get(),
+            err = cuLaunchKernel(kernel->get(),
                                (unsigned int)globalSize, 1UL, 1UL, // grid size
                                (unsigned int)localSize, 1UL, 1UL, // block size
                                0, // shared size
@@ -99,10 +97,10 @@ namespace GPAPI {
 #endif
             CHECK_ERROR(err);
         }
-        void wait(Queue queue, Context context) {
+        void wait(GPU_QUEUE queue, Context context) {
             GPU_RESULT err = GPU_SUCCESS;
 #ifdef TARGET_OPENCL
-            err = clFinish(queue.get());
+            err = clFinish(queue);
 #endif
 #ifdef TARGET_CUDA
             pushContext(context);
@@ -117,6 +115,13 @@ namespace GPAPI {
             for (int i = 0; i < ptrsToDelete.size(); ++i)
                 delete (char*)ptrsToDelete[i];
 #endif
+            index = 0;
+#if  (defined TARGET_CUDA)
+            numParams = paramOffset = 0;
+#endif
+#if (defined TARGET_NATIVE)
+            numParams = 0;
+#endif
         }
         ~KernelLaunch() {
             freeMem();
@@ -124,5 +129,3 @@ namespace GPAPI {
     };
 
 }
-
-#endif

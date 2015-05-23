@@ -1,6 +1,4 @@
-
-#ifndef opencl_cuda_misc_h
-#define opencl_cuda_misc_h
+#pragma once
 
 #ifndef __GPAPI_H__
 #   error For GPAPI you need only to include gpapi.h
@@ -10,10 +8,11 @@
 #include <memory>
 
 #include "common.h"
+#include "init_params.h"
 
 namespace GPAPI {
     template <typename PLATFORMS, typename DEVICES, typename NAMES, typename CONTEXTS, typename PROGRAMS>
-    void initCUDA(PLATFORMS& platformIds, DEVICES& deviceIds, NAMES& deviceNames, CONTEXTS& contextIds, PROGRAMS& programIds, const::std::string& source) {
+    void initCUDA(PLATFORMS& platformIds, DEVICES& deviceIds, NAMES& deviceNames, CONTEXTS& contextIds, PROGRAMS& programIds, const::std::string& source, InitParams initParams) {
         
         GPU_RESULT err = GPU_SUCCESS;
         err = cuInit(0);
@@ -24,7 +23,12 @@ namespace GPAPI {
         
         platformIds.push_back(0);
         
-        for (int i = 0; i < count; ++i) {
+        for (unsigned i = 0; i < count; ++i) {
+            if (!initParams.isActive(InitParams::VendorParams::NVidia,
+                                    InitParams::VendorParams::GPU,
+                                    i))
+                continue;
+            
             GPU_DEVICE device;
             err = cuDeviceGet(&device, i);
             CHECK_ERROR(err);
@@ -58,19 +62,21 @@ namespace GPAPI {
             size_t programLogSize;
             nvRes = nvrtcGetProgramLogSize(program, &programLogSize);
             CHECK_ERROR(nvRes);
-            std::unique_ptr<char[]> log(new char[programLogSize + 1]);
+            char* log = new char[programLogSize + 1];
             
-            nvRes = nvrtcGetProgramLog(program, log.get());
+            nvRes = nvrtcGetProgramLog(program, log);
             CHECK_ERROR(nvRes);
-            printLog(LogType::Error, "%s", log.get());
+            printLog(LogType::Error, "%s", log);
+            
+            delete[] log;
         }
         
         size_t ptxSize;
         nvRes = nvrtcGetPTXSize(program, &ptxSize);
         CHECK_ERROR(nvRes);
         
-        std::unique_ptr<char[]> ptx(new char[ptxSize + 1]);
-        nvRes = nvrtcGetPTX(program, ptx.get());
+        char* ptx = new char[ptxSize + 1];
+        nvRes = nvrtcGetPTX(program, ptx);
         
         const size_t JIT_NUM_OPTIONS = 8;
         const size_t JIT_BUFFER_SIZE_IN_BYTES = 1024;
@@ -105,15 +111,15 @@ namespace GPAPI {
         jitValues[valuesCounter++] = (void*)errorBufferSize;
         for (int i = 0; i < deviceIds.size(); ++i) {
             GPU_PROGRAM program;
-            err = cuModuleLoadDataEx(&program, ptx.get(), JIT_NUM_OPTIONS, jitOptions, jitValues);
+            err = cuModuleLoadDataEx(&program, ptx, JIT_NUM_OPTIONS, jitOptions, jitValues);
             CHECK_ERROR(err);
             programIds.push_back(program);
             printLog(LogType::Info, "program for device %i compiled\n", i);
         }
         nvRes = nvrtcDestroyProgram(&program);
         CHECK_ERROR(nvRes);
+        delete[] ptx;
     }
 }
 
 #endif //TARGET_CUDA
-#endif

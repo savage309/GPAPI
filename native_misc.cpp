@@ -18,7 +18,6 @@ static int threadIdx = 0;
 #include "kernel_launch.h"
 #include "kernel.cl"
 
-
 enum KernelParams {
     D_A = 0,
     D_B,

@@ -15,94 +15,70 @@ std::string getProgramSource(const std::string& path) {
     return std::move(source);
 }
 
-struct DeviceVecAdd : Device {
-    //
-    Buffer d_a;
-    Buffer d_b;
-    Buffer d_c;
-    
-    void launchKernel() {
-        printLog(LogType::Info, "kernel %s for device %s launched\n", "vecAdd", name.c_str());
-        
-        kernel.init("vecAdd", program);
-        
-        int NUM_ELEMENTS = 1024;
-        
-        std::unique_ptr<int[]> h_a (new int[NUM_ELEMENTS]);
-        std::unique_ptr<int[]> h_b (new int[NUM_ELEMENTS]);
-        std::unique_ptr<int[]> h_c (new int[NUM_ELEMENTS]);
-        for (int i = 0; i < NUM_ELEMENTS; ++i) {
-            h_a[i] = i;
-            h_b[i] = i * 2;
-        }
-        
-        const size_t bytes = NUM_ELEMENTS * sizeof(int);
-                
-        d_a.init(queue.get(), context, h_a.get(), bytes);
-        d_b.init(queue.get(), context, h_b.get(), bytes);
-        d_c.init(queue.get(), context, NULL, bytes);
-        
-        size_t globalSize, localSize;
-        // Number of work items in each local work group
-        localSize = 64;
-        
-        // Number of total work items - localSize must be devisor
-        globalSize = ceil(NUM_ELEMENTS/(float)localSize)*localSize;
-        
-        // Create the input and output arrays in device memory for our calculation
-        // Set the arguments to our compute kernel
-       
-        KernelLaunch kernelLaunch(kernel);
-        kernelLaunch.addArg(d_a);
-        kernelLaunch.addArg(d_b);
-        kernelLaunch.addArg(d_c);
-        kernelLaunch.addArg(NUM_ELEMENTS);
-        
-        // Execute the kernel over the entire range of the data set
-        kernelLaunch.run(queue, context, globalSize, localSize);
-        printLog(LogType::Info, "enqueue from device %s\n", name.c_str());
-        // Wait for the command queue to get serviced before reading back results
-        kernelLaunch.wait(queue, context);
-        printLog(LogType::Info, "finish from device %s\n", name.c_str());
-        // Read the results from the device
-        
-        d_c.download(queue.get(), context, h_c.get(), bytes);
-        
-        printLog(LogType::Info, "results from device %s\n", name.c_str());
-        for (int i = 0; i < NUM_ELEMENTS; ++i) {
-           printf ("%i ", h_c[i]);
-        }
-    }
-    
-    void freeMem() {
-        d_a.freeMem();
-        d_b.freeMem();
-        d_c.freeMem();
-    }
-    
-    ~DeviceVecAdd() {
-        freeMem();
-    }
-
-};
-
-
 int main(int argc, const char * argv[]) {
     using namespace std;
 
+    //load kernel source from a file
     std::string source = getProgramSource("/Developer/git/opencl/opencl/kernel.cl");
-    std::vector<DeviceVecAdd*> vec;
-    initGPAPI<DeviceVecAdd>(vec, source);
+    //devices will hold handles to all available GPAPI devices
+    std::vector<Device*> devices;
+    //filter to get only the devices we want
+    InitParams initParams;
+    initParams.nvidia = 0; //turn off all devices from nvidia
+    initParams.intel.gpu = 0; //turn off all intel gpus
+    initParams.amd = 0; //turn off all devices from amd
     
-    std::vector<std::thread> threads;
-    for (int i = 0; i < vec.size(); ++i) {
-        threads.push_back(std::thread(&DeviceVecAdd::launchKernel, vec[i]));
+    //call initGPAPI to init the devices
+    initGPAPI<Device>(devices, source, initParams);
+    
+    //now prepare some host buffers that will be transfered to the devices
+    int NUM_ELEMENTS = 1024;
+    std::unique_ptr<int[]> h_a (new int[NUM_ELEMENTS]);
+    std::unique_ptr<int[]> h_b (new int[NUM_ELEMENTS]);
+    std::unique_ptr<int[]> h_c (new int[NUM_ELEMENTS]);
+    for (int i = 0; i < NUM_ELEMENTS; ++i) {
+        h_a[i] = i;
+        h_b[i] = i * 2;
     }
     
-    for (auto& t: threads)
-        t.join();
+    const size_t bytes = NUM_ELEMENTS * sizeof(int);
+    //calculate global and local size
+    size_t globalSize, localSize;
+    // Number of work items in each local work group
+    localSize = 64;
     
-    freeGPAPI(vec);
+    // Number of total work items - localSize must be devisor
+    globalSize = ceil(NUM_ELEMENTS/(float)localSize)*localSize;
+    
+    std::vector<std::thread> threads;
+    
+    for (int i = 0; i < devices.size(); ++i) {
+        Device& device = *(devices[i]);
+        //set the kernel name we want to call
+        device.setKernel("vecAdd");
+        //our kernel has 4 args - 2 input buffers, 1 ouptut buffer and a size
+        //set those args
+        device.addParam(h_a.get(), bytes);
+        device.addParam(h_b.get(), bytes);
+        Buffer* result = device.addParam(NULL, bytes);
+        device.addParam(NUM_ELEMENTS);
+        
+        //launch the kernel
+        device.launchKernel(globalSize, localSize);
+        //wait for the result
+        device.wait();
+        //copy back the data of the result from the device to the host
+        result->download(device.queue.get(), device.context, h_c.get(), bytes);
+        
+        for (int i = 0; i < NUM_ELEMENTS; ++i) {
+            printf ("%i ", h_c[i]);
+        }
+        
+        //and clean up
+        device.freeMem();
+    }
+    
+    freeGPAPI(devices);
     
     return 0;
 }
