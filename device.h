@@ -8,8 +8,6 @@
 
 #include "init_params.h"
 
-#include <cassert>
-
 namespace GPAPI {
     
     struct Device {

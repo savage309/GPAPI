@@ -1,16 +1,5 @@
 
-#if __cplusplus >= 201103L
-#define CPP11
-#endif
 
-#ifdef CPP11
-#define MOVE std::move
-#else
-template <typename T>
-T MOVE(T& t) {
-    return t;
-}
-#endif
 
 #include "gpapi.h"
 
@@ -41,7 +30,7 @@ int main(int argc, const char * argv[]) {
     initParams.amd = 0; //turn off all devices from amd
     
     //call initGPAPI to init the devices
-    initGPAPI<Device>(devices, source, initParams);
+    initGPAPI(devices, source, initParams);
     
     //now prepare some host buffers that will be transfered to the devices
     int NUM_ELEMENTS = 1024;

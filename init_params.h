@@ -89,6 +89,8 @@ namespace GPAPI {
         VendorParams nvidia;
         VendorParams amd;
         VendorParams other;
+        /*! \return 1 if i-th device with vendor and type should be used, 0 otherwise
+         */
         int isActive(InitParams::VendorParams::VendorType vendor,
                      InitParams::VendorParams::DeviceType device,
                      unsigned i) {
@@ -107,6 +109,8 @@ namespace GPAPI {
                     break;
             }
         }
+        /*! \param i 1 enables all devices, 0 disables all devices
+         */
         unsigned operator=(unsigned i) {
             intel = nvidia = amd = other = i;
             return i;

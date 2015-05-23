@@ -1,3 +1,15 @@
+/*! \brief Defines that can make the same source compiles with cpp, cuda and opencl.
+ 
+ Only part of the common features of cpp, cuda and opencl is exposed.
+ * Functions that can be called from the host are marked with KERNEL
+ * Functions that can be called from the device are marked with DEVICE
+ * Shared memory is marked with SHARED
+ * Restrict (aka no pointer-alias) memory is marked with RESTRICT
+ * Memory barrier (syncthreads, barrier) is marked with MEMORY_BARRIER;
+ * Memory, that is allocated in the global memory is marked with GLOBAL
+ * The only valid way to get unique thread id is with the globalID() function.
+ * Only C types and float4 type are available by default.
+ */
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Common GPAPI stuff
@@ -10,6 +22,7 @@
     #define SHARED __local
     #define FLOAT4 float4
     #define RESTRICT restrict
+    #define MEMORY_BARRIER barrier(CLK_LOCAL_MEM_FENCE)
 #endif
 
 #ifdef __CUDACC__  
@@ -19,6 +32,7 @@
     #define SHARED __shared__
     #define FLOAT4 make_float4
     #define RESTRICT __restrict__
+    #define MEMORY_BARRIER __syncthreads
 #endif
 
 #if (!defined __OPENCL_VERSION__) && (!defined __CUDACC__)
@@ -32,6 +46,7 @@
     #define SHARED
     #define FLOAT4 float4
     #define RESTRICT
+    #define MEMORY_BARRIER
 #endif
 
 #if !defined(__CUDACC__) && !defined(__OPENCL_VERSION__)
@@ -65,8 +80,8 @@ DEVICE float4& operator/=(float4 &a, const float &b ) { a.x/=b; a.y/=b; a.z/=b; 
 #endif
 
 
-DEVICE
-int getGlobalId() {
+/*! \return Unique global thread id */
+DEVICE int globalID() {
 #ifdef __OPENCL_VERSION__
     return get_global_id(0);
 #endif //__OPENCL_VERSION__
@@ -80,7 +95,7 @@ int getGlobalId() {
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
-// Kernels
+// Kernel example
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 KERNEL
@@ -89,13 +104,9 @@ void vecAdd(GLOBAL int * RESTRICT a,
             GLOBAL int * RESTRICT c,
             unsigned int n)
 {
-    float4 af = FLOAT4(0, 0, 0, 0);
-    float4 bf = FLOAT4(1, 1, 1, 1);
-    float4 resf = af * bf;
-    
     //Get our global thread ID
-    int id = getGlobalId();
-    
+    int id = globalID();
+
     //Make sure we do not go out of bounds
     for (int i = 0; i < n; ++i) {
         if (id < n) {

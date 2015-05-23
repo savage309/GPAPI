@@ -8,6 +8,19 @@
 #   error GPAPI::opencl_misc needs one of CUDA, OpenCL or NATIVE targets to be defined
 #endif
 
+#if __cplusplus >= 201103L
+#   define CPP11
+#endif
+
+#ifdef CPP11
+#   define MOVE std::move
+#else
+    template <typename T>
+    T MOVE(const T& t) {
+        return t;
+    }
+#endif
+
 #include <algorithm>
 
 #include "buffer.h"
@@ -21,7 +34,12 @@
 
 namespace GPAPI {
     
-    
+    /*! \brief Should be called to init the devices prior any other GPAPI calls. This function should be called exactly once before using GPAPI (and afterward, exactly one call to freeGPAPI should be made in order to release the resources, that GPAPI has allocated)
+     \param devices Out param - the inited devices will be stored here.
+     \param source The device source that should be compiled (all devices will be created with this source).
+     \param initParams Optional param that can be used to filter which devices should be inited. Please note that in the current GPAPI version, the source might be compiled for all available devices, regardless of this parameter (however, the devices param will have only those devices, which were not filtered by initParams parameter)
+    \related freeGPAPI
+     */
     template <typename DEVICE>
     inline void initGPAPI(std::vector<DEVICE*>& devices, const::std::string& source, InitParams initParams = InitParams()) {
         std::vector<Platform> platformIds;
@@ -61,7 +79,9 @@ namespace GPAPI {
         }
     }
     
-    
+    /*! \brief Releases all the resources, that were allocated in initGPAPI. Should be called exactly once after all the work with the GPAPI is done 
+     \param devices The devices that were filled from the initGPAPI function
+     */
     template <typename DEVICE>
     inline void freeGPAPI(std::vector<DEVICE*> devices) {
         GPU_RESULT err = GPU_SUCCESS;
