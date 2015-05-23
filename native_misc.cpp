@@ -11,11 +11,13 @@
 #ifdef TARGET_NATIVE
 
 #define __NATIVE__
-static int threadIdx = 0;
 #include "queue.h"
 #include "buffer.h"
 #include "kernel.h"
 #include "kernel_launch.h"
+
+
+static int threadIdx;
 #include "kernel.cl"
 
 enum KernelParams {
@@ -25,7 +27,7 @@ enum KernelParams {
     COUNT,
 };
 
-void GPAPI::NativeDevice::launchKernel(KernelLaunch& kernelLaunch, size_t numTasks){
+void GPAPI::NativeDevice::launchKernel(KernelLaunch& kernelLaunch, size_t numTasks) {
     for (int i = 0; i < numTasks; ++i) {
         threadIdx = i;
         

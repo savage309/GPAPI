@@ -24,8 +24,8 @@ int main(int argc, const char * argv[]) {
     std::vector<Device*> devices;
     //filter to get only the devices we want
     InitParams initParams;
-    initParams.nvidia = 0; //turn off all devices from nvidia
-    initParams.intel.gpu = 0; //turn off all intel gpus
+    initParams.nvidia = 1; //turn off all devices from nvidia
+    initParams.intel = 0; //turn off all intel gpus
     initParams.amd = 0; //turn off all devices from amd
     
     //call initGPAPI to init the devices
